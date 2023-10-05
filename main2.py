@@ -31,7 +31,7 @@ def load():
     # print(f"Carro # vai passear, vamos embarcar os passageiros!")
     print(
         f"Corrida #{current_ride+1} vai começar, vamos embarcar os passageiros!")
-    print(f"Total de passageiros: {passengers}")
+    print(f"Total de passageiros na fila: {passengersNaFila}")
     print(f"Capacidade do carro: {capacity}")
     time.sleep(2)
     print('--------------------------------------------------------------------------')
@@ -56,10 +56,10 @@ def board():
 
 
 def unboard():
-    global unboarded, passengers, capacity, passengers_completed
+    global unboarded, passengers, capacity, passengers_completed, passengersNaFila
     print(f"Passageiro #{unboarded} desembarcou do carro...")
     passengers_completed += 1
-    passengers -= 1
+    passengersNaFila -= 1
     time.sleep(random.randint(0, 1))
 
 # Thread Functions
@@ -120,12 +120,13 @@ if __name__ == "__main__":
     passengers = int(input("Quantos passageiros?\n"))
     capacity = int(input("Qual vai ser a capacidade do carro?\n"))
     cars = int(input("Quantos carros tem na montanha russa?\n"))
+    passengersNaFila = passengers
     print('--------------------------------------------------------------------------')
     print(f"Número de passageiros:{passengers}")
+    print(f"Número de passageiros na fila:{passengersNaFila}")
     print(f"Número de carros: {cars}")
     print(f"Capacidade do carros: {capacity}")
 
-    print('--------------------------------------------------------------------------')
 
     car_thread = threading.Thread(target=car_thread)
     passenger_threads = [threading.Thread(
@@ -136,5 +137,5 @@ if __name__ == "__main__":
         thread.start()
 
     car_thread.join()
-
+    
     print("Todos os passageiros se divertiram! Montanha russa fechando...")
