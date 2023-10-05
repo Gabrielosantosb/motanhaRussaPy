@@ -2,8 +2,7 @@ import threading
 import random
 import time
 
-MAX_PASSENGERS = 25
-MAX_RIDES = 10
+
 
 # Variables
 check_in_lock = threading.Lock()
@@ -23,8 +22,8 @@ cars = []
 carId = 0
 passengers = 0
 capacity = 0
+passengers_completed = 0
 
-# Helper functions
 
 
 def load():
@@ -57,9 +56,10 @@ def board():
 
 
 def unboard():
-    global unboarded, passengers, capacity
+    global unboarded, passengers, capacity, passengers_completed
     print(f"Passageiro #{unboarded} desembarcou do carro...")
-    passengers -= capacity
+    passengers_completed += 1
+    passengers -= 1
     time.sleep(random.randint(0, 1))
 
 # Thread Functions
@@ -68,7 +68,8 @@ def unboard():
 def car_thread():
     global current_ride
 
-    while current_ride < total_rides:
+    # while current_ride < total_rides:
+    while passengers_completed != passengers:
         load()
 
         for _ in range(capacity):
@@ -125,14 +126,10 @@ if __name__ == "__main__":
     print(f"Capacidade do carros: {capacity}")
 
     print('--------------------------------------------------------------------------')
-    total_rides = 1 + random.randint(0, MAX_RIDES)
 
     car_thread = threading.Thread(target=car_thread)
     passenger_threads = [threading.Thread(
         target=passenger_thread) for _ in range(passengers)]
-
-    print(f"Today the roller coaster will ride {total_rides} times!")
-    print(f"There are {passengers} passengers waiting in the roller coaster queue!\n")
 
     car_thread.start()
     for thread in passenger_threads:
@@ -140,4 +137,4 @@ if __name__ == "__main__":
 
     car_thread.join()
 
-    print("O maquinista cansou de trabalhar, montanha russa fechando...")
+    print("Todos os passageiros se divertiram! Montanha russa fechando...")
