@@ -18,14 +18,25 @@ boarded = 0
 unboarded = 0
 current_ride = 0
 total_rides = 0
+
+cars = []
+carId = 0
 passengers = 0
 capacity = 0
 
 # Helper functions
+
+
 def load():
-    print(f"Corrida #{current_ride+1} vai começar, vamos embarcar os passageiros!")
+    print('--------------------------------------------------------------------------')
+    # print(f"Carro # vai passear, vamos embarcar os passageiros!")
+    print(
+        f"Corrida #{current_ride+1} vai começar, vamos embarcar os passageiros!")
+    print(f"Total de passageiros: {passengers}")
     print(f"Capacidade do carro: {capacity}")
     time.sleep(2)
+    print('--------------------------------------------------------------------------')
+
 
 def run():
     print("Carrinho lotado, pronto para o passeio!")
@@ -33,23 +44,30 @@ def run():
     print("O carro está no passeio!")
     time.sleep(5)
 
+
 def unload():
     print("Acabou o passeio, vamos desembarcar!")
     time.sleep(2)
+
 
 def board():
     global boarded
     print(f"{boarded} embarcaram no carro...")
     time.sleep(random.randint(0, 1))
 
+
 def unboard():
-    global unboarded
-    print(f"{unboarded} desembarcaram do carro...")
+    global unboarded, passengers, capacity
+    print(f"Passageiro #{unboarded} desembarcou do carro...")
+    passengers -= capacity
     time.sleep(random.randint(0, 1))
 
 # Thread Functions
+
+
 def car_thread():
     global current_ride
+
     while current_ride < total_rides:
         load()
 
@@ -67,6 +85,7 @@ def car_thread():
         all_unboarded.acquire()
         print("O carro está vazio!\n")
         current_ride += 1
+
 
 def passenger_thread():
     while True:
@@ -92,17 +111,28 @@ def passenger_thread():
                 all_unboarded.release()
                 unboarded = 0
 
+
 if __name__ == "__main__":
     random.seed(time.time())
-    passengers = 2 + random.randint(0, MAX_PASSENGERS)
-    capacity = 1 + random.randint(0, passengers - 1)
+    # passengers = 2 + random.randint(0, MAX_PASSENGERS)
+    # capacity = 1 + random.randint(0, passengers - 1)
+    passengers = int(input("Quantos passageiros?\n"))
+    capacity = int(input("Qual vai ser a capacidade do carro?\n"))
+    cars = int(input("Quantos carros tem na montanha russa?\n"))
+    print('--------------------------------------------------------------------------')
+    print(f"Número de passageiros:{passengers}")
+    print(f"Número de carros: {cars}")
+    print(f"Capacidade do carros: {capacity}")
+
+    print('--------------------------------------------------------------------------')
     total_rides = 1 + random.randint(0, MAX_RIDES)
 
     car_thread = threading.Thread(target=car_thread)
-    passenger_threads = [threading.Thread(target=passenger_thread) for _ in range(passengers)]
+    passenger_threads = [threading.Thread(
+        target=passenger_thread) for _ in range(passengers)]
 
-    # print(f"Today the roller coaster will ride {total_rides} times!")
-    # print(f"There are {passengers} passengers waiting in the roller coaster queue!\n")
+    print(f"Today the roller coaster will ride {total_rides} times!")
+    print(f"There are {passengers} passengers waiting in the roller coaster queue!\n")
 
     car_thread.start()
     for thread in passenger_threads:
