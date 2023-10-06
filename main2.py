@@ -4,42 +4,47 @@ import time
 
 
 
-# Variables
-check_in_lock = threading.Lock()
-riding_lock = threading.Lock()
+# Variáveis de controle
+check_in_lock = threading.Lock() 
+riding_lock = threading.Lock()   
 
-board_queue = threading.Semaphore(0)
-all_boarded = threading.Semaphore(0)
-unboard_queue = threading.Semaphore(0)
-all_unboarded = threading.Semaphore(0)
-car_semaphore = threading.Semaphore(1)
+board_queue = threading.Semaphore(0)      # sinalizar que os passageiros podem embarcar
+all_boarded = threading.Semaphore(0)      # sinalizar que todos os passageiros embarcaram
+unboard_queue = threading.Semaphore(0)    # sinalizar que os passageiros podem desembarcar
+all_unboarded = threading.Semaphore(0)    # sinalizar que todos os passageiros desembarcaram
+car_semaphore = threading.Semaphore(1)    # controlar o acesso ao carro (1 carro por vez)
 
-boarded = 0
-unboarded = 0
-current_ride = 1
-total_rides = 0
+# Variáveis  da montanha-russa
+boarded = 0               # Contador de passageiros embarcados no carro atual
+unboarded = 0             # Contador de passageiros desembarcados do carro atual
+current_ride = 0         # Contador de corridas
+total_rides = 0           # Contador total de corridas
 
-cars = []
-car_id = 0
-passenger_id = 0
-passengers = 0
-capacity = 0
-passengers_completed = 0
+# Informações carros e passageiros
+cars = []                  # Lista de carros
+car_id = 0                 # ID do carro
+passenger_id = 0           # ID do passageiro
+passengers = 0             # Número total de passageiros
+capacity = 0               # Capacidade máxima de cada carro
+passengers_completed = 0   # Contador de passageiros que concluíram o passeio
+passengersNaFila = 0
 
 
 
 def load():
     print('--------------------------------------------------------------------------')        
     print(f"Total de passageiros na fila: {passengersNaFila}")
+    print(f"Total de carros: {cars}")
     print(f"Capacidade do carro: {capacity}")
     time.sleep(2)
     print('--------------------------------------------------------------------------')
 
 
 def run():
+    global car_id
     print("Carrinho lotado, pronto para o passeio!")
     time.sleep(2)
-    print("O carro está no passeio!")
+    print(f"O carro #{car_id} está no passeio!")
     time.sleep(5)
 
 
@@ -55,7 +60,7 @@ def board():
 
 
 def unboard():
-    global unboarded, passengers, capacity, passengers_completed, passengersNaFila
+    global unboarded, passengers, passengers_completed, passengersNaFila
     print(f"Passageiro #{unboarded} desembarcou do carro...")
     passengers_completed += 1
     passengersNaFila -= 1
@@ -72,11 +77,12 @@ def car_thread():
         
         # Use car_id para seguir uma ordem crescente
         car_id = cars[(current_ride - 1) % len(cars)]
+        current_ride += 1
         
         print(f"Corrida #{current_ride}")
         print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
         
-        for _ in range(capacity):
+        for i in range(capacity):
             board_queue.release()
 
         all_boarded.acquire()
@@ -84,7 +90,7 @@ def car_thread():
         run()
         unload()
 
-        for _ in range(capacity):
+        for i in range(capacity):
             unboard_queue.release()
 
         all_unboarded.acquire()
@@ -122,15 +128,32 @@ def passenger_thread():
                 all_unboarded.release()
                 unboarded = 0
 
+def validateInputs():
+    global passengers, capacity, cars, passengersNaFila
+    
+    passengers = int(input("Quantos passageiros?\n"))
+    while passengers <= 0:
+        print("Por favor, insira um número de passageiros válido (maior que zero).")
+        passengers = int(input("Quantos passageiros?\n"))
+
+    capacity = int(input("Qual vai ser a capacidade do carro?\n"))
+    while capacity <= 0:
+        print("Por favor, insira uma capacidade de carro válida (maior que zero).")
+        capacity = int(input("Qual vai ser a capacidade do carro?\n"))
+
+    cars = int(input("Quantos carros tem na montanha russa?\n"))
+    while cars <= 0:
+        print("Por favor, insira um número de carros válido (maior que zero).")
+        cars = int(input("Quantos carros tem na montanha russa?\n"))
+    
+    cars = list(range(1, cars + 1))
+    passengersNaFila = passengers
+
+
 
 if __name__ == "__main__":
     random.seed(time.time())
-    # passengers = 2 + random.randint(0, MAX_PASSENGERS)
-    # capacity = 1 + random.randint(0, passengers - 1)
-    passengers = int(input("Quantos passageiros?\n"))
-    capacity = int(input("Qual vai ser a capacidade do carro?\n"))
-    cars =  list(range(1, int(input("Quantos carros tem na montanha russa?\n")) + 1))
-    passengersNaFila = passengers
+    validateInputs()
     print('--------------------------------------------------------------------------')
     print(f"Número de passageiros:{passengers}")
     print(f"Número de passageiros na fila:{passengersNaFila}")
@@ -140,7 +163,7 @@ if __name__ == "__main__":
 
     car_thread = threading.Thread(target=car_thread)
     passenger_threads = [threading.Thread(
-        target=passenger_thread) for _ in range(passengers)]
+        target=passenger_thread) for i in range(passengers)]
 
     car_thread.start()
     for thread in passenger_threads:
