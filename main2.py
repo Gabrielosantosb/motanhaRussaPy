@@ -29,10 +29,7 @@ passengers_completed = 0
 
 
 def load():
-    print('--------------------------------------------------------------------------')
-    # print(f"Carro # vai passear, vamos embarcar os passageiros!")
-    print(
-        f"Corrida #{current_ride+1} vai começar, vamos embarcar os passageiros!")
+    print('--------------------------------------------------------------------------')        
     print(f"Total de passageiros na fila: {passengersNaFila}")
     print(f"Capacidade do carro: {capacity}")
     time.sleep(2)
@@ -68,11 +65,14 @@ def unboard():
 
 
 def car_thread():
-    global current_ride, car_id
+    global current_ride, car_id, cars
 
     while passengers_completed != passengers:
         load()
-        car_id += 1  # Atribuir um novo ID de carro
+        
+        # Use car_id para seguir uma ordem crescente
+        car_id = cars[(current_ride - 1) % len(cars)]
+        
         print(f"Corrida #{current_ride}")
         print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
         
@@ -91,6 +91,9 @@ def car_thread():
         print(f"Carro #{car_id} está vazio!\n")
         current_ride += 1
 
+        # Reiniciar current_ride para 1 quando exceder o número de carros
+        if current_ride > len(cars):
+            current_ride = 1
 
 def passenger_thread():
     global passenger_id
