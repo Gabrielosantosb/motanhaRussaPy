@@ -32,7 +32,7 @@ def load():
     print('--------------------------------------------------------------------------')
     # print(f"Carro # vai passear, vamos embarcar os passageiros!")
     print(
-        f"Corrida #{current_ride+1} vai começar")
+        f"Corrida #{current_ride+1} vai começar, vamos embarcar os passageiros!")
     print(f"Total de passageiros na fila: {passengersNaFila}")
     print(f"Capacidade do carro: {capacity}")
     time.sleep(2)
@@ -67,11 +67,15 @@ def unboard():
 # Thread Functions
 
 
-def car_thread(car_id):
+def car_thread():
+    global current_ride, car_id
+
     while passengers_completed != passengers:
         load()
+        car_id += 1  # Atribuir um novo ID de carro
+        print(f"Corrida #{current_ride}")
         print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
-
+        
         for _ in range(capacity):
             board_queue.release()
 
@@ -85,30 +89,7 @@ def car_thread(car_id):
 
         all_unboarded.acquire()
         print(f"Carro #{car_id} está vazio!\n")
-
-# def car_thread():
-#     global current_ride, car_id
-
-#     while passengers_completed != passengers:
-#         load()
-#         car_id += 1  # Atribuir um novo ID de carro
-#         print(f"Corrida #{current_ride}")
-#         print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
-        
-#         for _ in range(capacity):
-#             board_queue.release()
-
-#         all_boarded.acquire()
-
-#         run()
-#         unload()
-
-#         for _ in range(capacity):
-#             unboard_queue.release()
-
-#         all_unboarded.acquire()
-#         print(f"Carro #{car_id} está vazio!\n")
-#         current_ride += 1
+        current_ride += 1
 
 
 def passenger_thread():
@@ -141,25 +122,27 @@ def passenger_thread():
 
 if __name__ == "__main__":
     random.seed(time.time())
+    # passengers = 2 + random.randint(0, MAX_PASSENGERS)
+    # capacity = 1 + random.randint(0, passengers - 1)
     passengers = int(input("Quantos passageiros?\n"))
     capacity = int(input("Qual vai ser a capacidade do carro?\n"))
-    car_ids = list(range(1, int(input("Quantos carros tem na montanha russa?\n")) + 1))
+    cars =  list(range(1, int(input("Quantos carros tem na montanha russa?\n")) + 1))
     passengersNaFila = passengers
     print('--------------------------------------------------------------------------')
     print(f"Número de passageiros:{passengers}")
     print(f"Número de passageiros na fila:{passengersNaFila}")
-    print(f"Número de carros: {len(car_ids)}")
+    print(f"Número de carros: {cars}")
     print(f"Capacidade do carros: {capacity}")
 
-    car_threads = [threading.Thread(target=car_thread, args=(car_id,)) for car_id in car_ids]
-    passenger_threads = [threading.Thread(target=passenger_thread) for _ in range(passengers)]
 
-    for car_thread in car_threads:
-        car_thread.start()
-    for passenger_thread in passenger_threads:
-        passenger_thread.start()
+    car_thread = threading.Thread(target=car_thread)
+    passenger_threads = [threading.Thread(
+        target=passenger_thread) for _ in range(passengers)]
 
-    for car_thread in car_threads:
-        car_thread.join()
+    car_thread.start()
+    for thread in passenger_threads:
+        thread.start()
 
+    car_thread.join()
+    
     print("Todos os passageiros se divertiram! Montanha russa fechando...")
