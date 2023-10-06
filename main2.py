@@ -12,6 +12,7 @@ board_queue = threading.Semaphore(0)
 all_boarded = threading.Semaphore(0)
 unboard_queue = threading.Semaphore(0)
 all_unboarded = threading.Semaphore(0)
+car_semaphore = threading.Semaphore(1)
 
 boarded = 0
 unboarded = 0
@@ -19,7 +20,8 @@ current_ride = 0
 total_rides = 0
 
 cars = []
-carId = 0
+car_id = 0
+passenger_id = 0
 passengers = 0
 capacity = 0
 passengers_completed = 0
@@ -66,12 +68,14 @@ def unboard():
 
 
 def car_thread():
-    global current_ride
+    global current_ride, car_id
 
-    # while current_ride < total_rides:
     while passengers_completed != passengers:
         load()
-
+        car_id += 1  # Atribuir um novo ID de carro
+        print(f"Corrida #{current_ride}")
+        print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
+        
         for _ in range(capacity):
             board_queue.release()
 
@@ -84,17 +88,20 @@ def car_thread():
             unboard_queue.release()
 
         all_unboarded.acquire()
-        print("O carro está vazio!\n")
+        print(f"Carro #{car_id} está vazio!\n")
         current_ride += 1
 
 
 def passenger_thread():
+    global passenger_id
+
     while True:
         board_queue.acquire()
 
         with check_in_lock:
             global boarded
             boarded += 1
+            passenger_id += 1  
             board()
 
             if boarded == capacity:
