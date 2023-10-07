@@ -31,6 +31,9 @@ passengersNaFila = 0
 
 
 
+def get_time():
+    return time.strftime("%H:%M:%S")
+
 def load():
     print('--------------------------------------------------------------------------')        
     print(f"Total de passageiros na fila: {passengersNaFila}")
@@ -42,26 +45,26 @@ def load():
 
 def run():
     global car_id
-    print("Carrinho lotado, pronto para o passeio!")
+    print(f"[{get_time()}]Carrinho lotado, pronto para o passeio!")
     time.sleep(2)
-    print(f"O carro #{car_id} está no passeio!")
+    print(f"[{get_time()}]O carro #{car_id} está no passeio!")
     time.sleep(5)
 
 
 def unload():
-    print("Acabou o passeio, vamos desembarcar!")
+    print(f"[{get_time()}]Acabou o passeio, vamos desembarcar!")
     time.sleep(2)
 
 
 def board():
     global boarded
-    print(f"{boarded} embarcaram no carro...")
+    print(f"[{get_time}]{boarded} embarcaram no carro...")
     time.sleep(random.randint(0, 1))
 
 
 def unboard():
     global unboarded, passengers, passengers_completed, passengersNaFila
-    print(f"Passageiro #{unboarded} desembarcou do carro...")
+    print(f"[{get_time()}]Passageiro #{unboarded} desembarcou do carro...")
     passengers_completed += 1
     passengersNaFila -= 1
     time.sleep(random.randint(0, 1))
@@ -74,15 +77,14 @@ def car_thread():
 
     while passengers_completed != passengers:
         load()
-        
-        # Use car_id para seguir uma ordem crescente
-        car_id = cars[(current_ride - 1) % len(cars)]
+
+        car_id = cars[current_ride % len(cars)]  # Agora pega o próximo carro na lista
         current_ride += 1
-        
-        print(f"Corrida #{current_ride}")
-        print(f"Carro #{car_id} vai passear, vamos embarcar os passageiros!")
-        
-        for i in range(capacity):
+
+        print(f"[{get_time()}]Corrida #{current_ride}")
+        print(f"[{get_time()}]Carro #{car_id} vai passear, vamos embarcar os passageiros!")
+
+        for i in range(min(capacity, passengersNaFila)):  
             board_queue.release()
 
         all_boarded.acquire()
@@ -90,19 +92,14 @@ def car_thread():
         run()
         unload()
 
-        for i in range(capacity):
+        for i in range(min(capacity, passengersNaFila)):  
             unboard_queue.release()
 
         all_unboarded.acquire()
-        print(f"Carro #{car_id} está vazio!\n")
-        current_ride += 1
-
-        # Reiniciar current_ride para 1 quando exceder o número de carros
-        if current_ride > len(cars):
-            current_ride = 1
-
+        print(f"[{get_time()}]Carro #{car_id} está vazio!\n")
+        
 def passenger_thread():
-    global passenger_id
+    global passenger_id, capacity, pa
 
     while True:
         board_queue.acquire()
@@ -110,13 +107,13 @@ def passenger_thread():
         with check_in_lock:
             global boarded
             boarded += 1
-            passenger_id += 1  
+            passenger_id += 1
             board()
+            
 
-            if boarded == capacity:
+            if boarded == capacity or passengers_completed == passengers:
                 all_boarded.release()
                 boarded = 0
-
         unboard_queue.acquire()
 
         with riding_lock:
@@ -124,9 +121,9 @@ def passenger_thread():
             unboarded += 1
             unboard()
 
-            if unboarded == capacity:
-                all_unboarded.release()
-                unboarded = 0
+            if unboarded == capacity or passengers_completed == passengers:
+                    all_unboarded.release()
+                    unboarded = 0
 
 def validateInputs():
     global passengers, capacity, cars, passengersNaFila
