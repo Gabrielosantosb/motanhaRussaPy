@@ -2,8 +2,6 @@ import threading
 import random
 import time
 
-
-
 # Variáveis de controle
 check_in_lock = threading.Lock() 
 riding_lock = threading.Lock()   
@@ -58,7 +56,7 @@ def unload():
 
 def board():
     global boarded
-    print(f"[{get_time}]{boarded} embarcaram no carro...")
+    print(f"[{get_time()}]{boarded} embarcaram no carro...")
     time.sleep(random.randint(0, 1))
 
 
@@ -69,24 +67,28 @@ def unboard():
     passengersNaFila -= 1
     time.sleep(random.randint(0, 1))
 
+# -----------------------------------------------
 # Thread Functions
 
 
 def car_thread():
-    global current_ride, car_id, cars
+    global current_ride, car_id, cars, capacity, passengersNaFila
 
     while passengers_completed != passengers:
         load()
-
-        car_id = cars[current_ride % len(cars)]  # Agora pega o próximo carro na lista
+        car_id = cars[current_ride % len(cars)] 
         current_ride += 1
+
 
         print(f"[{get_time()}]Corrida #{current_ride}")
         print(f"[{get_time()}]Carro #{car_id} vai passear, vamos embarcar os passageiros!")
+        
+        if passengersNaFila < capacity:
+            all_boarded.release()
+            # board_queue.release()
 
         for i in range(min(capacity, passengersNaFila)):  
             board_queue.release()
-
         all_boarded.acquire()
 
         run()
@@ -125,6 +127,7 @@ def passenger_thread():
                     all_unboarded.release()
                     unboarded = 0
 
+# -----------------------------------------------
 def validateInputs():
     global passengers, capacity, cars, passengersNaFila
     
@@ -146,17 +149,13 @@ def validateInputs():
     cars = list(range(1, cars + 1))
     passengersNaFila = passengers
 
-
-
 if __name__ == "__main__":
-    random.seed(time.time())
     validateInputs()
     print('--------------------------------------------------------------------------')
     print(f"Número de passageiros:{passengers}")
     print(f"Número de passageiros na fila:{passengersNaFila}")
     print(f"Número de carros: {cars}")
     print(f"Capacidade do carros: {capacity}")
-
 
     car_thread = threading.Thread(target=car_thread)
     passenger_threads = [threading.Thread(
