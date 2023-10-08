@@ -71,7 +71,7 @@ def desembarcar():
 # -----------------------------------------------
 # Funções de Thread
 
-def thread_carro():
+def funcao_carro_thread():
     global corrida_atual, id_carro, carros, capacidade_carro, passageiros_na_fila
 
     while passageiros_concluidos != passageiros:
@@ -99,7 +99,7 @@ def thread_carro():
         print(f"[{getTime()}] Carro #{id_carro} está vazio!\n")
 
 
-def thread_passageiro():
+def funcao_thread_passageiro():
     global id_passageiro, capacidade_carro, passageiros_concluidos, embarcados
 
     while True:
@@ -149,7 +149,7 @@ def validar_input():
     passageiros_na_fila = passageiros
 
 
-if __name__ == "__main__":
+def main():
     validar_input()
     print('--------------------------------------------------------------------------')
     print(f"Número de passageiros: {passageiros}")
@@ -157,9 +157,9 @@ if __name__ == "__main__":
     print(f"Número de carros: {carros}")
     print(f"Capacidade dos carros: {capacidade_carro}")
 
-    thread_carro = threading.Thread(target=thread_carro)
+    thread_carro = threading.Thread(target=funcao_carro_thread)
     threads_passageiros = [threading.Thread(
-        target=thread_passageiro) for i in range(passageiros)]
+        target=funcao_thread_passageiro) for i in range(passageiros)]
 
     thread_carro.start()
     for thread in threads_passageiros:
@@ -168,3 +168,7 @@ if __name__ == "__main__":
     thread_carro.join()
 
     print("Todos os passageiros se divertiram! A montanha-russa está fechando...")
+
+
+if __name__ == "__main__":
+    main()
