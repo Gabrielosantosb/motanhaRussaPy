@@ -1,5 +1,4 @@
 import threading
-import random
 import time
 
 # Variáveis de controle
@@ -19,13 +18,13 @@ corrida_atual = 0  # Contador de corridas
 total_corridas = 0  # Contador total de corridas
 
 # Informações carros e passageiros
-carros = []  # Lista de carros
-id_carro = 0  # ID do carro
-id_passageiro = 0  # ID do passageiro
-passageiros = 0  # Número total de passageiros
-capacidade_carro = 0  # Capacidade máxima de cada carro
-passageiros_concluidos = 0  # Contador de passageiros que concluíram o passeio
-passageiros_na_fila = 0
+carros = []  
+id_carro = 0 
+id_passageiro = 0  
+passageiros = 0  
+capacidade_carro = 0 
+passageiros_concluidos = 0 
+passageiros_na_fila = 0 
 
 
 def getTime():
@@ -57,7 +56,7 @@ def descarregar():
 def embarcar():
     global embarcados
     print(f"[{getTime()}] {embarcados} passageiros embarcaram no carro...")
-    time.sleep(random.randint(0, 1))
+    time.sleep(1)
 
 
 def desembarcar():
@@ -65,7 +64,8 @@ def desembarcar():
     print(f"[{getTime()}] Passageiro #{desembarcados} desembarcou do carro...")
     passageiros_concluidos += 1
     passageiros_na_fila -= 1
-    time.sleep(random.randint(0, 1))
+    
+    time.sleep(1)
 
 
 # -----------------------------------------------
