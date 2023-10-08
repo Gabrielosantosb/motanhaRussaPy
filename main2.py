@@ -3,168 +3,168 @@ import random
 import time
 
 # Variáveis de controle
-check_in_lock = threading.Lock() 
-riding_lock = threading.Lock()   
+trava_check_in = threading.Lock()
+trava_corrida = threading.Lock()
 
-board_queue = threading.Semaphore(0)      # sinalizar que os passageiros podem embarcar
-all_boarded = threading.Semaphore(0)      # sinalizar que todos os passageiros embarcaram
-unboard_queue = threading.Semaphore(0)    # sinalizar que os passageiros podem desembarcar
-all_unboarded = threading.Semaphore(0)    # sinalizar que todos os passageiros desembarcaram
-car_semaphore = threading.Semaphore(1)    # controlar o acesso ao carro (1 carro por vez)
+fila_embarque = threading.Semaphore(0)  # sinalizar que os passageiros podem embarcar
+todos_embarcaram = threading.Semaphore(0)  # sinalizar que todos os passageiros embarcaram
+fila_desembarque = threading.Semaphore(0)  # sinalizar que os passageiros podem desembarcar
+todos_desembarcaram = threading.Semaphore(0)  # sinalizar que todos os passageiros desembarcaram
+semaforo_carro = threading.Semaphore(1)  # controlar o acesso ao carro (1 carro por vez)
 
-# Variáveis  da montanha-russa
-boarded = 0               # Contador de passageiros embarcados no carro atual
-unboarded = 0             # Contador de passageiros desembarcados do carro atual
-current_ride = 0         # Contador de corridas
-total_rides = 0           # Contador total de corridas
+# Variáveis da montanha-russa
+embarcados = 0  # Contador de passageiros embarcados no carro atual
+desembarcados = 0  # Contador de passageiros desembarcados do carro atual
+corrida_atual = 0  # Contador de corridas
+total_corridas = 0  # Contador total de corridas
 
 # Informações carros e passageiros
-cars = []                  # Lista de carros
-car_id = 0                 # ID do carro
-passenger_id = 0           # ID do passageiro
-passengers = 0             # Número total de passageiros
-capacity = 0               # Capacidade máxima de cada carro
-passengers_completed = 0   # Contador de passageiros que concluíram o passeio
-passengersNaFila = 0
+carros = []  # Lista de carros
+id_carro = 0  # ID do carro
+id_passageiro = 0  # ID do passageiro
+passageiros = 0  # Número total de passageiros
+capacidade_carro = 0  # Capacidade máxima de cada carro
+passageiros_concluidos = 0  # Contador de passageiros que concluíram o passeio
+passageiros_na_fila = 0
 
 
-
-def get_time():
+def getTime():
     return time.strftime("%H:%M:%S")
 
-def load():
-    print('--------------------------------------------------------------------------')        
-    print(f"Total de passageiros na fila: {passengersNaFila}")
-    print(f"Total de carros: {cars}")
-    print(f"Capacidade do carro: {capacity}")
+
+def carregar():
+    print('--------------------------------------------------------------------------')
+    print(f"Total de passageiros na fila: {passageiros_na_fila}")
+    print(f"Total de carros: {carros}")
+    print(f"Capacidade do carro: {capacidade_carro}")
     time.sleep(2)
     print('--------------------------------------------------------------------------')
 
 
-def run():
-    global car_id
-    print(f"[{get_time()}]Carrinho lotado, pronto para o passeio!")
+def iniciar_corrida():
+    global id_carro
+    print(f"[{getTime()}] Carro lotado, pronto para o passeio!")
     time.sleep(2)
-    print(f"[{get_time()}]O carro #{car_id} está no passeio!")
+    print(f"[{getTime()}] O carro #{id_carro} está na corrida!")
     time.sleep(5)
 
 
-def unload():
-    print(f"[{get_time()}]Acabou o passeio, vamos desembarcar!")
+def descarregar():
+    print(f"[{getTime()}] A corrida terminou, vamos desembarcar!")
     time.sleep(2)
 
 
-def board():
-    global boarded
-    print(f"[{get_time()}]{boarded} embarcaram no carro...")
+def embarcar():
+    global embarcados
+    print(f"[{getTime()}] {embarcados} passageiros embarcaram no carro...")
     time.sleep(random.randint(0, 1))
 
 
-def unboard():
-    global unboarded, passengers, passengers_completed, passengersNaFila
-    print(f"[{get_time()}]Passageiro #{unboarded} desembarcou do carro...")
-    passengers_completed += 1
-    passengersNaFila -= 1
+def desembarcar():
+    global desembarcados, passageiros, passageiros_concluidos, passageiros_na_fila
+    print(f"[{getTime()}] Passageiro #{desembarcados} desembarcou do carro...")
+    passageiros_concluidos += 1
+    passageiros_na_fila -= 1
     time.sleep(random.randint(0, 1))
+
 
 # -----------------------------------------------
-# Thread Functions
+# Funções de Thread
+
+def thread_carro():
+    global corrida_atual, id_carro, carros, capacidade_carro, passageiros_na_fila
+
+    while passageiros_concluidos != passageiros:
+        carregar()
+        id_carro = carros[corrida_atual % len(carros)]
+        corrida_atual += 1
+
+        print(f"[{getTime()}] Corrida #{corrida_atual}")
+        print(f"[{getTime()}] Carro #{id_carro} está indo para a corrida, vamos embarcar os passageiros!")
+
+        if passageiros_na_fila < capacidade_carro:
+            todos_embarcaram.release()
+
+        for i in range(min(capacidade_carro, passageiros_na_fila)):
+            fila_embarque.release()
+        todos_embarcaram.acquire()
+
+        iniciar_corrida()
+        descarregar()
+
+        for i in range(min(capacidade_carro, passageiros_na_fila)):
+            fila_desembarque.release()
+
+        todos_desembarcaram.acquire()
+        print(f"[{getTime()}] Carro #{id_carro} está vazio!\n")
 
 
-def car_thread():
-    global current_ride, car_id, cars, capacity, passengersNaFila
-
-    while passengers_completed != passengers:
-        load()
-        car_id = cars[current_ride % len(cars)] 
-        current_ride += 1
-
-
-        print(f"[{get_time()}]Corrida #{current_ride}")
-        print(f"[{get_time()}]Carro #{car_id} vai passear, vamos embarcar os passageiros!")
-        
-        if passengersNaFila < capacity:
-            all_boarded.release()
-            # board_queue.release()
-
-        for i in range(min(capacity, passengersNaFila)):  
-            board_queue.release()
-        all_boarded.acquire()
-
-        run()
-        unload()
-
-        for i in range(min(capacity, passengersNaFila)):  
-            unboard_queue.release()
-
-        all_unboarded.acquire()
-        print(f"[{get_time()}]Carro #{car_id} está vazio!\n")
-        
-def passenger_thread():
-    global passenger_id, capacity, pa
+def thread_passageiro():
+    global id_passageiro, capacidade_carro, passageiros_concluidos, embarcados
 
     while True:
-        board_queue.acquire()
+        fila_embarque.acquire()
+        with trava_check_in:
+            global embarcados
+            embarcados += 1
+            id_passageiro += 1
+            embarcar()
 
-        with check_in_lock:
-            global boarded
-            boarded += 1
-            passenger_id += 1
-            board()
-            
+            if embarcados == capacidade_carro or passageiros_concluidos == passageiros:
+                todos_embarcaram.release()
+                embarcados = 0
+        fila_desembarque.acquire()
 
-            if boarded == capacity or passengers_completed == passengers:
-                all_boarded.release()
-                boarded = 0
-        unboard_queue.acquire()
+        with trava_corrida:
+            global desembarcados
+            desembarcados += 1
+            desembarcar()
 
-        with riding_lock:
-            global unboarded
-            unboarded += 1
-            unboard()
+            if desembarcados == capacidade_carro or passageiros_concluidos == passageiros:
+                todos_desembarcaram.release()
+                desembarcados = 0
 
-            if unboarded == capacity or passengers_completed == passengers:
-                    all_unboarded.release()
-                    unboarded = 0
 
 # -----------------------------------------------
-def validateInputs():
-    global passengers, capacity, cars, passengersNaFila
-    
-    passengers = int(input("Quantos passageiros?\n"))
-    while passengers <= 0:
+
+def validar_input():
+    global passageiros, capacidade_carro, carros, passageiros_na_fila
+
+    passageiros = int(input("Quantos passageiros?\n"))
+    while passageiros <= 0:
         print("Por favor, insira um número de passageiros válido (maior que zero).")
-        passengers = int(input("Quantos passageiros?\n"))
+        passageiros = int(input("Quantos passageiros?\n"))
 
-    capacity = int(input("Qual vai ser a capacidade do carro?\n"))
-    while capacity <= 0:
+    capacidade_carro = int(input("Qual será a capacidade do carro?\n"))
+    while capacidade_carro <= 0:
         print("Por favor, insira uma capacidade de carro válida (maior que zero).")
-        capacity = int(input("Qual vai ser a capacidade do carro?\n"))
+        capacidade_carro = int(input("Qual será a capacidade do carro?\n"))
 
-    cars = int(input("Quantos carros tem na montanha russa?\n"))
-    while cars <= 0:
+    carros = int(input("Quantos carros existem na montanha-russa?\n"))
+    while carros <= 0:
         print("Por favor, insira um número de carros válido (maior que zero).")
-        cars = int(input("Quantos carros tem na montanha russa?\n"))
-    
-    cars = list(range(1, cars + 1))
-    passengersNaFila = passengers
+        carros = int(input("Quantos carros existem na montanha-russa?\n"))
+
+    carros = list(range(1, carros + 1))
+    passageiros_na_fila = passageiros
+
 
 if __name__ == "__main__":
-    validateInputs()
+    validar_input()
     print('--------------------------------------------------------------------------')
-    print(f"Número de passageiros:{passengers}")
-    print(f"Número de passageiros na fila:{passengersNaFila}")
-    print(f"Número de carros: {cars}")
-    print(f"Capacidade do carros: {capacity}")
+    print(f"Número de passageiros: {passageiros}")
+    print(f"Número de passageiros na fila: {passageiros_na_fila}")
+    print(f"Número de carros: {carros}")
+    print(f"Capacidade dos carros: {capacidade_carro}")
 
-    car_thread = threading.Thread(target=car_thread)
-    passenger_threads = [threading.Thread(
-        target=passenger_thread) for i in range(passengers)]
+    thread_carro = threading.Thread(target=thread_carro)
+    threads_passageiros = [threading.Thread(
+        target=thread_passageiro) for i in range(passageiros)]
 
-    car_thread.start()
-    for thread in passenger_threads:
+    thread_carro.start()
+    for thread in threads_passageiros:
         thread.start()
 
-    car_thread.join()
-    
-    print("Todos os passageiros se divertiram! Montanha russa fechando...")
+    thread_carro.join()
+
+    print("Todos os passageiros se divertiram! A montanha-russa está fechando...")
